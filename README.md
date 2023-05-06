@@ -21,7 +21,7 @@ ___
 
 Let's assume that there can be multiple buildings and apartments and meters. According to the example scenario we actually don't need apartments since each apartment will have a single meter. But for this example we will keep it as it will be helpful in future to build complex dashboard. We will represent buildings and apartments by Assets and meters by Devices.
 
-Lets create some assets which will represents buildings and apartments.
+Lets create some assets which will represents buildings and apartments. For now lets assume that we have a building which has 3 apartments and each apartment has a meter. Later we will allow our users to create apartments and meters.
 
 Now, lets create 2 Asset profile for buildings and apartments and a device profile for meters. For buildings and apartments Asset profile name will be building and apartment respectively and for meters device profile name will be meter. 
 
