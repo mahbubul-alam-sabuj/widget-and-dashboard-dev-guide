@@ -147,7 +147,146 @@ Goto Actions Tab from the Entities table edit mode and click on Add action(+) bu
 
 Now we can use arrow button to navigate to Apartments page. 
 
-There is another way that we can use to navigate between states, that is using custom action. From ```Type``` we can select custom action and use the function below to navigate to a specific state. 
+There is another way that we can use to navigate between states, that is using custom action. From ```Type``` we can select custom action and use the function below to navigate to a specific state.
+
+
+```js
+let $injector = widgetContext.$scope.$injector;
+let dashboardService = $injector.get(
+  widgetContext.servicesMap.get("dashboardService")
+);
+
+let currentUrl = widgetContext.dashboardService.currentUrl;
+let dashboardId = "";
+let dashboardGroupId = "";
+let currentAliasName = 'apartments related to building';
+let currentDashboardState = 'apartments_page';
+
+if (currentUrl && currentUrl.trim()) {
+  var splittedURL = currentUrl.split("/");
+  dashboardId = splittedURL[splittedURL.length - 1];
+  dashboardGroupId = splittedURL[splittedURL.length - 2];
+}
+
+dashboardService.getDashboard(dashboardId).subscribe(function (data) {
+  let dashboardData = data;
+
+  var zoneAlias = findObjectInfoByAlias(
+    dashboardData.configuration.entityAliases,
+    currentAliasName
+  );
+
+  dashboardData.configuration.entityAliases[
+    zoneAlias.key
+  ].filter.rootEntity.id = entityId.id;
+  dashboardService.saveDashboard(dashboardData).subscribe(() => {
+    const currentEntity = {
+      name: entityName,
+      label: entityLabel,
+      entityType: entityId.type,
+      id: entityId.id,
+    };
+
+    widgetContext.aliasController.updateEntityAliases(
+      dashboardData.configuration.entityAliases
+    );
+
+    updateURL(dashboardGroupId, dashboardId, "state");
+    updateDashboardStates(currentDashboardState);
+  });
+});
+
+function updateDashboardStates(statedId) {
+  var stateParams = {
+    entityId: entityId,
+    entityName: entityName,
+    entityLabel: entityLabel,
+  };
+
+  widgetContext.stateController.openState(statedId, stateParams);
+}
+
+function findObjectInfoByAlias(obj, aliasName) {
+  for (let [index, [key, value]] of Object.entries(Object.entries(obj))) {
+    if (value.alias === aliasName) {
+      return {
+        index: index,
+        key: key,
+        value: value,
+      };
+    }
+  }
+}
+
+function updateURL(groupId, id, queryId) {
+  let isUpdated = false;
+
+  if (queryId && queryId.trim()) {
+    console.log(widgetContext);
+    debugger;
+    widgetContext.authService.route.queryParams
+      .pipe(widgetContext.rxjs.take(2))
+      .subscribe((params) => {
+        debugger;
+        if (
+          !isUpdated &&
+          queryId &&
+          typeof params === "object" &&
+          params[queryId]
+        ) {
+          localStorage.setItem("currentState", params[queryId]);
+
+          const currentRouteURL = dashboardService.router.url;
+          const moduleName =
+            currentRouteURL && currentRouteURL.includes("home?")
+              ? "home"
+              : "dashboardGroups";
+
+          dashboardService.router
+            .navigateByUrl(`/dashboardGroups`, {
+              skipLocationChange: true,
+            })
+            .then(() => {
+              if (moduleName === "dashboardGroups") {
+                const param = localStorage.getItem("currentState");
+                if (param) {
+                  dashboardService.router
+                    .navigate([`${moduleName}/${groupId}/${id}`], {
+                      queryParams: {
+                        [queryId]: param,
+                      },
+                    })
+                    .then(() => {
+                      isUpdated = true;
+                      localStorage.removeItem("currentState");
+                    });
+                }
+              } else if (moduleName === "home") {
+                const param = localStorage.getItem("currentState");
+                if (param) {
+                  dashboardService.router
+                    .navigate([`${moduleName}`], {
+                      queryParams: {
+                        [queryId]: param,
+                      },
+                    })
+                    .then(() => {
+                      isUpdated = true;
+                      localStorage.removeItem("currentState");
+                    });
+                }
+              } else {
+                isUpdated = true;
+                localStorage.removeItem("currentState");
+              }
+            });
+        }
+      });
+  }
+}
+```
+
+
 
 ```js
 openDashboardState('apartments_page'); //pass the state id
@@ -186,6 +325,10 @@ Select ```Contains``` from Type and Select ```Asset``` from Entity types and cli
 Type and select name field in Latest data key autocomplete and do what we have done for Buildings List such as Change the table name and Add navigation button. After that add the table.
 
 <img src="./screenshots/32.png">
+
+Now, we will add some buttons for Buildings page and Apartments page. For both page we will have 3 buttons for create, edit and delete.
+
+
 
 
 Now, we will add 3 additional buttons to add, edit and delete apartments. 
